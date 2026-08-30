@@ -3,33 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Multi-Utility Student Toolkit</title>
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+            type="module"></script>
+
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
     <style>
         :root {
             --primary-orange: #f97316;
             --primary-yellow: #eab308;
             --primary-brown: #78350f;
+            --dark-brown: #451a03;
             --click-blue: #2563eb;
             --bg-light: #fffbeb;
+            --success: #16a34a;
+            --danger: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             margin: 0;
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: #fafaf9;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
+            background: #fafaf9;
             color: #44403c;
+        }
+
+        button,
+        input {
+            font: inherit;
         }
 
         .app-container {
             display: flex;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
         }
 
-        /* Sidebar Navigation Layout */
+        /* =========================
+           SIDEBAR
+        ========================= */
+
         .sidebar {
             width: 260px;
-            background: linear-gradient(185deg, var(--primary-brown), #451a03);
+            min-width: 260px;
+            background: linear-gradient(
+                185deg,
+                var(--primary-brown),
+                var(--dark-brown)
+            );
             padding: 25px 15px;
             display: flex;
             flex-direction: column;
@@ -42,7 +74,7 @@
             font-weight: bold;
             text-align: center;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(254, 243, 199, 0.1);
+            border-bottom: 1px solid rgba(254, 243, 199, 0.15);
         }
 
         .menu-list {
@@ -61,7 +93,7 @@
             font-weight: 500;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -70,27 +102,37 @@
         }
 
         .menu-btn.active {
-            background: linear-gradient(90deg, var(--primary-orange), var(--primary-yellow));
+            background: linear-gradient(
+                90deg,
+                var(--primary-orange),
+                var(--primary-yellow)
+            );
             color: var(--primary-brown);
             font-weight: bold;
         }
 
-        /* Click Feedback Effects */
-        .menu-btn:active, .action-btn:active, .chip:active {
+        .menu-btn:active,
+        .action-btn:active,
+        .chip:active {
             background: var(--click-blue) !important;
             color: white !important;
         }
 
-        /* Main Workspace Panels Canvas */
+        /* =========================
+           MAIN CONTENT
+        ========================= */
+
         .main-content {
             flex: 1;
             padding: 40px;
             overflow-y: auto;
+            min-width: 0;
         }
 
         .tool-panel {
             display: none;
-            animation: transitionSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: transitionSlide 0.3s ease forwards;
+            max-width: 900px;
         }
 
         .tool-panel.active {
@@ -99,17 +141,18 @@
 
         h2 {
             color: var(--primary-brown);
-            margin: 0 0 6px 0;
+            margin: 0 0 6px;
         }
 
         .desc {
             color: #78716c;
-            margin: 0 0 30px 0;
+            margin: 0 0 30px;
             font-size: 14px;
+            line-height: 1.6;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         label {
@@ -120,19 +163,20 @@
             color: var(--primary-brown);
         }
 
-        input[type="date"] {
+        input[type="date"],
+        input[type="file"] {
             padding: 12px 14px;
             border: 2px solid #fdba74;
             border-radius: 8px;
             font-size: 16px;
             outline: none;
-            background-color: white;
+            background: white;
             width: 100%;
-            max-width: 300px;
-            box-sizing: border-box;
+            max-width: 500px;
         }
 
-        input[type="date"]:focus {
+        input[type="date"]:focus,
+        input[type="file"]:focus {
             border-color: var(--primary-orange);
             box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
         }
@@ -146,7 +190,7 @@
             font-weight: 600;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: 0.15s;
             width: 100%;
             max-width: 300px;
             -webkit-tap-highlight-color: transparent;
@@ -156,20 +200,54 @@
             background: #ea580c;
         }
 
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* =========================
+           UPLOAD AREA
+        ========================= */
+
         .upload-dropzone {
             border: 3px dashed #fdba74;
             background: #fffdeb;
             border-radius: 12px;
             padding: 40px 20px;
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
             margin-bottom: 25px;
             cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .upload-dropzone:hover,
+        .upload-dropzone.dragover {
+            border-color: var(--primary-orange);
+            background: #fff7ed;
         }
 
         .upload-dropzone .icon {
-            font-size: 40px;
+            font-size: 42px;
+            display: block;
+            margin-bottom: 10px;
         }
+
+        .upload-dropzone p {
+            margin: 5px 0;
+        }
+
+        .upload-dropzone small {
+            color: #78716c;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        /* =========================
+           CHIPS
+        ========================= */
 
         .chip-container {
             display: flex;
@@ -184,8 +262,11 @@
             border-radius: 20px;
             cursor: pointer;
             font-weight: 500;
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            transition: 0.2s;
+        }
+
+        .chip:hover {
+            border-color: var(--primary-orange);
         }
 
         .chip.active {
@@ -194,17 +275,22 @@
             border-color: var(--primary-orange);
         }
 
-        /* Mobile Metric Layout Containers */
+        /* =========================
+           RESULTS
+        ========================= */
+
         .results-box {
             margin-top: 30px;
             padding: 20px;
             background: #fef08a;
             border: 2px solid #eab308;
             border-radius: 12px;
-            max-width: 500px;
+            max-width: 700px;
         }
 
-        .results-box.hidden { display: none; }
+        .results-box.hidden {
+            display: none;
+        }
 
         .metrics-row {
             display: flex;
@@ -230,80 +316,2304 @@
             margin-bottom: 4px;
         }
 
-        @keyframes transitionSlide {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* =========================
+           STATUS
+        ========================= */
+
+        .status {
+            display: none;
+            margin: 20px 0;
+            padding: 14px 16px;
+            border-radius: 8px;
+            max-width: 700px;
+            line-height: 1.5;
+            font-size: 14px;
         }
 
-        /* Mobile Layout Configuration Adaptations */
+        .status.show {
+            display: block;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        /* =========================
+           FILE LIST
+        ========================= */
+
+        .file-list {
+            max-width: 700px;
+            margin: 15px 0 25px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            border: 1px solid #e7e5e4;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-size {
+            color: #78716c;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        /* =========================
+           DOWNLOAD LINKS
+        ========================= */
+
+        .download-area {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 700px;
+        }
+
+        .download-link {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .download-link:hover {
+            opacity: 0.9;
+        }
+
+        /* =========================
+           SMALL INFO CARD
+        ========================= */
+
+        .info-card {
+            background: white;
+            border: 1px solid #e7e5e4;
+            border-left: 4px solid var(--primary-orange);
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 700px;
+            margin: 20px 0;
+        }
+
+        .info-card strong {
+            color: var(--primary-brown);
+        }
+
+        /* =========================
+           LOADING
+        ========================= */
+
+        .progress-container {
+            display: none;
+            max-width: 700px;
+            margin: 20px 0;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar-bg {
+            height: 12px;
+            background: #e7e5e4;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(
+                90deg,
+                var(--primary-orange),
+                var(--primary-yellow)
+            );
+            transition: width 0.2s ease;
+        }
+
+        .progress-text {
+            margin-top: 7px;
+            font-size: 13px;
+            color: #78716c;
+        }
+
+        /* =========================
+           ANIMATION
+        ========================= */
+
+        @keyframes transitionSlide {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
         @media (max-width: 768px) {
-            .app-container { flex-direction: column; }
-            .sidebar { width: auto; height: auto; padding: 12px; gap: 10px; }
-            .logo { display: none; }
-            .menu-list { flex-direction: row; overflow-x: auto; padding-bottom: 4px; gap: 8px; }
-            .menu-btn { white-space: nowrap; padding: 10px 16px; font-size: 14px; border-radius: 20px; }
-            .main-content { padding: 24px 20px; }
-            .metrics-row { flex-direction: column; gap: 10px; }
-            .metric { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; text-align: left; }
-            .metric span { display: inline-block; font-size: 26px; margin-bottom: 0; }
+
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: 0;
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .logo {
+                display: none;
+            }
+
+            .menu-list {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 4px;
+                gap: 8px;
+                scrollbar-width: thin;
+            }
+
+            .menu-btn {
+                white-space: nowrap;
+                padding: 10px 16px;
+                font-size: 14px;
+                border-radius: 20px;
+            }
+
+            .main-content {
+                padding: 24px 18px;
+            }
+
+            .metrics-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .metric {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 25px;
+                text-align: left;
+            }
+
+            .metric span {
+                display: inline-block;
+                font-size: 26px;
+                margin-bottom: 0;
+            }
+
+            .upload-dropzone {
+                padding: 30px 15px;
+            }
         }
     </style>
 </head>
+
 <body>
 
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="logo">🏫 Student Toolkit</div>
-            <nav class="menu-list">
-                <button class="menu-btn active" data-target="date-calc-tool">🗓️ Date Calculator</button>
-                <button class="menu-btn" data-target="pdf-jpg-tool">🖼️ PDF to JPG</button>
-                <button class="menu-btn" data-target="jpg-pdf-tool">📄 JPG to PDF</button>
-                <button class="menu-btn" data-target="resize-tool">🗜️ Adjust File Size</button>
-            </nav>
-        </aside>
+<div class="app-container">
 
-        <!-- Main Workspace Panels Layout Area -->
-        <main class="main-content">
-            
-            <!-- Tool 1: Date Interval Calculator -->
-            <section id="date-calc-tool" class="tool-panel active">
-                <h2>Advanced Date Interval Calculator</h2>
-                <p class="desc">Compute years, months, and days between selections. Allowed limits: 1989 to 2050.</p>
-                <div class="form-group">
-                    <label>Starting Date:</label>
-                    <input type="date" id="startDate" min="1989-01-01" max="2050-12-31">
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            🏫 Student Toolkit
+        </div>
+
+        <nav class="menu-list">
+
+            <button class="menu-btn active"
+                    data-target="date-calc-tool">
+                🗓️ Date Calculator
+            </button>
+
+            <button class="menu-btn"
+                    data-target="pdf-jpg-tool">
+                🖼️ PDF to JPG
+            </button>
+
+            <button class="menu-btn"
+                    data-target="jpg-pdf-tool">
+                📄 JPG to PDF
+            </button>
+
+            <button class="menu-btn"
+                    data-target="resize-tool">
+                🗜️ Adjust File Size
+            </button>
+
+        </nav>
+    </aside>
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+    <main class="main-content">
+
+
+        <!-- ==================================
+             TOOL 1 - DATE CALCULATOR
+        =================================== -->
+
+        <section id="date-calc-tool"
+                 class="tool-panel active">
+
+            <h2>Advanced Date Interval Calculator</h2>
+
+            <p class="desc">
+                Calculate the exact difference between two dates
+                in years, months and days.
+            </p>
+
+            <div class="form-group">
+
+                <label for="startDate">
+                    Starting Date:
+                </label>
+
+                <input
+                    type="date"
+                    id="startDate"
+                    min="1989-01-01"
+                    max="2050-12-31"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="endDate">
+                    Target Ending Date:
+                </label>
+
+                <input
+                    type="date"
+                    id="endDate"
+                    min="1989-01-01"
+                    max="2050-12-31"
+                >
+
+            </div>
+
+
+            <button class="action-btn"
+                    id="calculateDatesBtn">
+                Run Calculation
+            </button>
+
+
+            <div class="results-box hidden"
+                 id="dateResults">
+
+                <h3 style="margin-top:0; color:var(--primary-brown);">
+                    Calculated Duration
+                </h3>
+
+                <div class="metrics-row">
+
+                    <div class="metric">
+                        <span id="outYears">0</span>
+                        Years
+                    </div>
+
+                    <div class="metric">
+                        <span id="outMonths">0</span>
+                        Months
+                    </div>
+
+                    <div class="metric">
+                        <span id="outDays">0</span>
+                        Days
+                    </div>
+
                 </div>
-                <div class="form-group">
-                    <label>Target Ending Date:</label>
-                    <input type="date" id="endDate" min="1989-01-01" max="2050-12-31">
+
+            </div>
+
+            <div id="dateStatus"
+                 class="status">
+            </div>
+
+        </section>
+
+
+        <!-- ==================================
+             TOOL 2 - PDF TO JPG
+        =================================== -->
+
+        <section id="pdf-jpg-tool"
+                 class="tool-panel">
+
+            <h2>Convert PDF to JPG Images</h2>
+
+            <p class="desc">
+                Upload a PDF and convert each page into a JPG image.
+                Everything is processed inside your browser.
+            </p>
+
+
+            <div class="upload-dropzone"
+                 id="pdfUploadZone">
+
+                <span class="icon">📥</span>
+
+                <p>
+                    <strong>Click to select a PDF</strong>
+                </p>
+
+                <small>
+                    You can also drag and drop your PDF here.
+                </small>
+
+                <input
+                    type="file"
+                    id="pdfFileInput"
+                    class="hidden-input"
+                    accept="application/pdf"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Target JPG Size:
+                </label>
+
+                <div class="chip-container"
+                     id="pdfJpgChips">
+
+                    <button class="chip"
+                            data-size="45">
+                        45 KB
+                    </button>
+
+                    <button class="chip active"
+                            data-size="200">
+                        200 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="300">
+                        300 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="3072">
+                        3 MB
+                    </button>
+
                 </div>
-                <button class="action-btn" id="calculateDatesBtn">Run Calculation</button>
-                
-                <div class="results-box hidden" id="dateResults">
-                    <h3 style="margin-top:0; color:var(--primary-brown);">Calculated Duration:</h3>
-                    <div class="metrics-row">
-                        <div class="metric"><span id="outYears">0</span> Years</div>
-                        <div class="metric"><span id="outMonths">0</span> Months</div>
-                        <div class="metric"><span id="outDays">0</span> Days</div>
+
+            </div>
+
+
+            <div id="pdfFileInfo"
+                 class="file-list">
+            </div>
+
+
+            <button class="action-btn"
+                    id="convertPdfBtn"
+                    disabled>
+                Convert PDF to JPG
+            </button>
+
+
+            <div class="progress-container"
+                 id="pdfProgress">
+
+                <div class="progress-bar-bg">
+                    <div class="progress-bar"
+                         id="pdfProgressBar">
                     </div>
                 </div>
-            </section>
 
-            <!-- Tool 2: PDF to JPG -->
-            <section id="pdf-jpg-tool" class="tool-panel">
-                <h2>Convert PDF to JPG Images</h2>
-                <p class="desc">Transform documents into picture slices at configured output constraints.</p>
-                <div class="upload-dropzone" onclick="alert('File selector triggered!')">
-                    <span class="icon">📥</span>
-                    <p>Select or upload your PDF source</p>
+                <div class="progress-text"
+                     id="pdfProgressText">
+                    Preparing...
                 </div>
-                <div class="form-group">
-                    <label>Target File Compression Size:</label>
-                    <div class="chip-container" id="pdfJpgChips">
-                        <button class="chip active">45 KB</button>
-                        <button class="chip">200 KB</button>
-                        <button class="chip">300 KB</button>
-                        <button class="chip">3 MB</button>
+
+            </div>
+
+
+            <div id="pdfStatus"
+                 class="status">
+            </div>
+
+
+            <div id="pdfDownloads"
+                 class="download-area">
+            </div>
+
+        </section>
+
+
+        <!-- ==================================
+             TOOL 3 - JPG TO PDF
+        =================================== -->
+
+        <section id="jpg-pdf-tool"
+                 class="tool-panel">
+
+            <h2>Convert JPG Images to PDF</h2>
+
+            <p class="desc">
+                Select one or more JPG/PNG images and combine them
+                into a single PDF document.
+            </p>
+
+
+            <div class="upload-dropzone"
+                 id="imageUploadZone">
+
+                <span class="icon">🖼️</span>
+
+                <p>
+                    <strong>Click to select images</strong>
+                </p>
+
+                <small>
+                    JPG, JPEG and PNG files are supported.
+                </small>
+
+                <input
+                    type="file"
+                    id="imageFileInput"
+                    class="hidden-input"
+                    accept="image/jpeg,image/png"
+                    multiple
+                >
+
+            </div>
+
+
+            <div id="imageFileList"
+                 class="file-list">
+            </div>
+
+
+            <button class="action-btn"
+                    id="createPdfBtn"
+                    disabled>
+                Create PDF
+            </button>
+
+
+            <div class="progress-container"
+                 id="jpgPdfProgress">
+
+                <div class="progress-bar-bg">
+                    <div class="progress-bar"
+                         id="jpgPdfProgressBar">
                     </div>
                 </div>
+
+                <div class="progress-text"
+                     id="jpgPdfProgressText">
+                    Preparing...
+                </div>
+
+            </div>
+
+
+            <div id="jpgPdfStatus"
+                 class="status">
+            </div>
+
+
+            <div id="jpgPdfDownloads"
+                 class="download-area">
+            </div>
+
+        </section>
+
+
+        <!-- ==================================
+             TOOL 4 - ADJUST FILE SIZE
+        =================================== -->
+
+        <section id="resize-tool"
+                 class="tool-panel">
+
+            <h2>Adjust Image File Size</h2>
+
+            <p class="desc">
+                Compress an image toward your selected target size.
+                This tool works directly in your browser.
+            </p>
+
+
+            <div class="upload-dropzone"
+                 id="resizeUploadZone">
+
+                <span class="icon">🗜️</span>
+
+                <p>
+                    <strong>Click to select an image</strong>
+                </p>
+
+                <small>
+                    JPG, JPEG and PNG are supported.
+                </small>
+
+                <input
+                    type="file"
+                    id="resizeFileInput"
+                    class="hidden-input"
+                    accept="image/jpeg,image/png,image/webp"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Target File Size:
+                </label>
+
+                <div class="chip-container"
+                     id="resizeChips">
+
+                    <button class="chip active"
+                            data-size="45">
+                        45 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="100">
+                        100 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="200">
+                        200 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="300">
+                        300 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="500">
+                        500 KB
+                    </button>
+
+                    <button class="chip"
+                            data-size="1024">
+                        1 MB
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div id="resizeFileInfo"
+                 class="file-list">
+            </div>
+
+
+            <button class="action-btn"
+                    id="resizeBtn"
+                    disabled>
+                Adjust File Size
+            </button>
+
+
+            <div class="progress-container"
+                 id="resizeProgress">
+
+                <div class="progress-bar-bg">
+                    <div class="progress-bar"
+                         id="resizeProgressBar">
+                    </div>
+                </div>
+
+                <div class="progress-text"
+                     id="resizeProgressText">
+                    Preparing...
+                </div>
+
+            </div>
+
+
+            <div id="resizeStatus"
+                 class="status">
+            </div>
+
+
+            <div id="resizeDownloads"
+                 class="download-area">
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script type="module">
+
+/* =========================================================
+   LOAD PDF.JS
+========================================================= */
+
+import * as pdfjsLib from
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+
+/* =========================================================
+   GENERAL HELPERS
+========================================================= */
+
+function formatBytes(bytes) {
+
+    if (bytes < 1024) {
+        return bytes + " B";
+    }
+
+    if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + " KB";
+    }
+
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+
+function showStatus(element, message, type = "info") {
+
+    element.textContent = message;
+
+    element.className =
+        "status show " + type;
+}
+
+
+function clearStatus(element) {
+
+    element.textContent = "";
+
+    element.className = "status";
+}
+
+
+function setProgress(container, bar, text, percent, message) {
+
+    container.classList.add("show");
+
+    bar.style.width =
+        Math.max(0, Math.min(100, percent)) + "%";
+
+    text.textContent =
+        message;
+}
+
+
+function hideProgress(container) {
+
+    container.classList.remove("show");
+}
+
+
+/* =========================================================
+   SIDEBAR NAVIGATION
+========================================================= */
+
+const menuButtons =
+    document.querySelectorAll(".menu-btn");
+
+const toolPanels =
+    document.querySelectorAll(".tool-panel");
+
+
+menuButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        menuButtons.forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+        toolPanels.forEach(panel => {
+            panel.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        const target =
+            document.getElementById(
+                button.dataset.target
+            );
+
+        if (target) {
+            target.classList.add("active");
+        }
+
+    });
+
+});
+
+
+/* =========================================================
+   CHIP HANDLING
+========================================================= */
+
+function setupChips(containerId) {
+
+    const container =
+        document.getElementById(containerId);
+
+    if (!container) return;
+
+    const chips =
+        container.querySelectorAll(".chip");
+
+    chips.forEach(chip => {
+
+        chip.addEventListener("click", () => {
+
+            chips.forEach(c => {
+                c.classList.remove("active");
+            });
+
+            chip.classList.add("active");
+
+        });
+
+    });
+
+}
+
+
+setupChips("pdfJpgChips");
+setupChips("resizeChips");
+
+
+/* =========================================================
+   DATE CALCULATOR
+========================================================= */
+
+const calculateDatesBtn =
+    document.getElementById("calculateDatesBtn");
+
+const dateResults =
+    document.getElementById("dateResults");
+
+const dateStatus =
+    document.getElementById("dateStatus");
+
+
+calculateDatesBtn.addEventListener("click", () => {
+
+    const startValue =
+        document.getElementById("startDate").value;
+
+    const endValue =
+        document.getElementById("endDate").value;
+
+
+    if (!startValue || !endValue) {
+
+        showStatus(
+            dateStatus,
+            "Please select both dates.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const start =
+        parseDate(startValue);
+
+    const end =
+        parseDate(endValue);
+
+
+    if (!start || !end) {
+
+        showStatus(
+            dateStatus,
+            "The selected dates are invalid.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    let first = start;
+    let second = end;
+
+
+    if (first > second) {
+
+        first = end;
+        second = start;
+
+    }
+
+
+    let years =
+        second.getFullYear() -
+        first.getFullYear();
+
+    let months =
+        second.getMonth() -
+        first.getMonth();
+
+    let days =
+        second.getDate() -
+        first.getDate();
+
+
+    if (days < 0) {
+
+        months--;
+
+        const daysInPreviousMonth =
+            new Date(
+                second.getFullYear(),
+                second.getMonth(),
+                0
+            ).getDate();
+
+        days += daysInPreviousMonth;
+
+    }
+
+
+    if (months < 0) {
+
+        years--;
+
+        months += 12;
+
+    }
+
+
+    document.getElementById("outYears")
+        .textContent = years;
+
+    document.getElementById("outMonths")
+        .textContent = months;
+
+    document.getElementById("outDays")
+        .textContent = days;
+
+
+    dateResults.classList.remove("hidden");
+
+
+    const orderMessage =
+        startValue === endValue
+            ? "Both dates are the same."
+            : startValue > endValue
+                ? "The dates were automatically ordered from earlier to later."
+                : "Duration calculated successfully.";
+
+
+    showStatus(
+        dateStatus,
+        orderMessage,
+        "success"
+    );
+
+});
+
+
+function parseDate(value) {
+
+    const parts =
+        value.split("-").map(Number);
+
+    if (parts.length !== 3) {
+        return null;
+    }
+
+    const [year, month, day] = parts;
+
+    return new Date(
+        year,
+        month - 1,
+        day
+    );
+
+}
+
+
+/* =========================================================
+   GENERIC UPLOAD ZONE
+========================================================= */
+
+function setupUploadZone(zoneId, inputId) {
+
+    const zone =
+        document.getElementById(zoneId);
+
+    const input =
+        document.getElementById(inputId);
+
+
+    zone.addEventListener("click", () => {
+        input.click();
+    });
+
+
+    zone.addEventListener("dragover", event => {
+
+        event.preventDefault();
+
+        zone.classList.add("dragover");
+
+    });
+
+
+    zone.addEventListener("dragleave", () => {
+
+        zone.classList.remove("dragover");
+
+    });
+
+
+    zone.addEventListener("drop", event => {
+
+        event.preventDefault();
+
+        zone.classList.remove("dragover");
+
+        if (event.dataTransfer.files.length) {
+
+            try {
+                const dataTransfer =
+                    new DataTransfer();
+
+                Array.from(event.dataTransfer.files)
+                    .forEach(file => {
+                        dataTransfer.items.add(file);
+                    });
+
+                input.files =
+                    dataTransfer.files;
+
+                input.dispatchEvent(
+                    new Event("change")
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   PDF → JPG
+========================================================= */
+
+setupUploadZone(
+    "pdfUploadZone",
+    "pdfFileInput"
+);
+
+
+const pdfInput =
+    document.getElementById("pdfFileInput");
+
+const convertPdfBtn =
+    document.getElementById("convertPdfBtn");
+
+const pdfFileInfo =
+    document.getElementById("pdfFileInfo");
+
+const pdfStatus =
+    document.getElementById("pdfStatus");
+
+const pdfDownloads =
+    document.getElementById("pdfDownloads");
+
+const pdfProgress =
+    document.getElementById("pdfProgress");
+
+const pdfProgressBar =
+    document.getElementById("pdfProgressBar");
+
+const pdfProgressText =
+    document.getElementById("pdfProgressText");
+
+
+let selectedPdf = null;
+
+
+pdfInput.addEventListener("change", () => {
+
+    const file =
+        pdfInput.files[0];
+
+    selectedPdf = null;
+
+    pdfFileInfo.innerHTML = "";
+
+    pdfDownloads.innerHTML = "";
+
+    clearStatus(pdfStatus);
+
+    hideProgress(pdfProgress);
+
+    convertPdfBtn.disabled = true;
+
+
+    if (!file) return;
+
+
+    if (file.type !== "application/pdf") {
+
+        showStatus(
+            pdfStatus,
+            "Please select a valid PDF file.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    selectedPdf = file;
+
+
+    pdfFileInfo.innerHTML = `
+        <div class="file-item">
+            <div class="file-name">
+                📄 ${escapeHtml(file.name)}
+            </div>
+            <div class="file-size">
+                ${formatBytes(file.size)}
+            </div>
+        </div>
+    `;
+
+
+    convertPdfBtn.disabled = false;
+
+
+    showStatus(
+        pdfStatus,
+        "PDF selected. Choose a target size and click Convert PDF to JPG.",
+        "info"
+    );
+
+});
+
+
+function getPdfTargetKB() {
+
+    const active =
+        document.querySelector(
+            "#pdfJpgChips .chip.active"
+        );
+
+    return active
+        ? Number(active.dataset.size)
+        : 200;
+
+}
+
+
+convertPdfBtn.addEventListener("click", async () => {
+
+    if (!selectedPdf) return;
+
+
+    convertPdfBtn.disabled = true;
+
+    pdfDownloads.innerHTML = "";
+
+    showStatus(
+        pdfStatus,
+        "Reading your PDF...",
+        "info"
+    );
+
+
+    try {
+
+        const arrayBuffer =
+            await selectedPdf.arrayBuffer();
+
+
+        const pdf =
+            await pdfjsLib.getDocument({
+                data: arrayBuffer
+            }).promise;
+
+
+        const targetKB =
+            getPdfTargetKB();
+
+        const targetBytes =
+            targetKB * 1024;
+
+
+        const zip =
+            new JSZip();
+
+
+        const pageCount =
+            pdf.numPages;
+
+
+        for (let pageNumber = 1;
+             pageNumber <= pageCount;
+             pageNumber++) {
+
+
+            setProgress(
+                pdfProgress,
+                pdfProgressBar,
+                pdfProgressText,
+                ((pageNumber - 1) / pageCount) * 100,
+                `Converting page ${pageNumber} of ${pageCount}...`
+            );
+
+
+            const page =
+                await pdf.getPage(pageNumber);
+
+
+            const baseViewport =
+                page.getViewport({
+                    scale: 1
+                });
+
+
+            /*
+             * Start at a reasonable resolution.
+             */
+            let scale = 1.5;
+
+
+            let blob =
+                await renderPdfPage(
+                    page,
+                    scale,
+                    0.82
+                );
+
+
+            /*
+             * Try to get close to target size.
+             */
+            if (targetBytes > 0 &&
+                blob.size > targetBytes) {
+
+                let low = 0.5;
+                let high = scale;
+
+
+                for (let i = 0; i < 7; i++) {
+
+                    const middle =
+                        (low + high) / 2;
+
+
+                    const testBlob =
+                        await renderPdfPage(
+                            page,
+                            middle,
+                            0.78
+                        );
+
+
+                    if (testBlob.size > targetBytes) {
+
+                        high = middle;
+
+                    } else {
+
+                        low = middle;
+                        blob = testBlob;
+
+                    }
+
+                }
+
+            }
+
+
+            /*
+             * If compression is still needed,
+             * lower JPEG quality.
+             */
+            if (blob.size > targetBytes) {
+
+                for (
+                    let quality = 0.72;
+                    quality >= 0.35;
+                    quality -= 0.07
+                ) {
+
+                    const testBlob =
+                        await renderPdfPage(
+                            page,
+                            Math.max(
+                                0.5,
+                                scale
+                            ),
+                            quality
+                        );
+
+
+                    if (
+                        testBlob.size <
+                        blob.size
+                    ) {
+
+                        blob = testBlob;
+
+                    }
+
+
+                    if (
+                        blob.size <=
+                        targetBytes
+                    ) {
+                        break;
+                    }
+
+                }
+
+            }
+
+
+            const pageName =
+                `page-${String(pageNumber).padStart(3, "0")}.jpg`;
+
+
+            zip.file(
+                pageName,
+                blob
+            );
+
+
+            setProgress(
+                pdfProgress,
+                pdfProgressBar,
+                pdfProgressText,
+                (pageNumber / pageCount) * 100,
+                `Finished page ${pageNumber} of ${pageCount}.`
+            );
+
+        }
+
+
+        showStatus(
+            pdfStatus,
+            `All ${pageCount} page(s) converted. Creating download package...`,
+            "info"
+        );
+
+
+        const zipBlob =
+            await zip.generateAsync({
+                type: "blob",
+                compression: "DEFLATE",
+                compressionOptions: {
+                    level: 6
+                }
+            });
+
+
+        const downloadUrl =
+            URL.createObjectURL(zipBlob);
+
+
+        const link =
+            document.createElement("a");
+
+        link.href = downloadUrl;
+
+        link.download =
+            removeExtension(
+                selectedPdf.name
+            ) + "-jpg-images.zip";
+
+        link.className =
+            "download-link";
+
+        link.textContent =
+            `⬇️ Download JPG Images (${formatBytes(zipBlob.size)})`;
+
+
+        pdfDownloads.appendChild(link);
+
+
+        showStatus(
+            pdfStatus,
+            "Conversion completed successfully.",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showStatus(
+            pdfStatus,
+            "Could not convert the PDF. Make sure the PDF is valid and try again.",
+            "error"
+        );
+
+    } finally {
+
+        convertPdfBtn.disabled = false;
+
+    }
+
+});
+
+
+async function renderPdfPage(
+    page,
+    scale,
+    quality
+) {
+
+    const viewport =
+        page.getViewport({
+            scale: scale
+        });
+
+
+    const canvas =
+        document.createElement("canvas");
+
+
+    const context =
+        canvas.getContext("2d", {
+            alpha: false
+        });
+
+
+    canvas.width =
+        Math.ceil(viewport.width);
+
+    canvas.height =
+        Math.ceil(viewport.height);
+
+
+    context.fillStyle = "white";
+
+    context.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    await page.render({
+        canvasContext: context,
+        viewport: viewport
+    }).promise;
+
+
+    return new Promise(resolve => {
+
+        canvas.toBlob(
+            blob => resolve(blob),
+            "image/jpeg",
+            quality
+        );
+
+    });
+
+}
+
+
+/* =========================================================
+   JPG → PDF
+========================================================= */
+
+setupUploadZone(
+    "imageUploadZone",
+    "imageFileInput"
+);
+
+
+const imageInput =
+    document.getElementById("imageFileInput");
+
+const createPdfBtn =
+    document.getElementById("createPdfBtn");
+
+const imageFileList =
+    document.getElementById("imageFileList");
+
+const jpgPdfStatus =
+    document.getElementById("jpgPdfStatus");
+
+const jpgPdfDownloads =
+    document.getElementById("jpgPdfDownloads");
+
+const jpgPdfProgress =
+    document.getElementById("jpgPdfProgress");
+
+const jpgPdfProgressBar =
+    document.getElementById("jpgPdfProgressBar");
+
+const jpgPdfProgressText =
+    document.getElementById("jpgPdfProgressText");
+
+
+let selectedImages = [];
+
+
+imageInput.addEventListener("change", () => {
+
+    selectedImages =
+        Array.from(imageInput.files || []);
+
+
+    imageFileList.innerHTML = "";
+
+    jpgPdfDownloads.innerHTML = "";
+
+    clearStatus(jpgPdfStatus);
+
+    hideProgress(jpgPdfProgress);
+
+
+    const validImages =
+        selectedImages.filter(file => {
+
+            return [
+                "image/jpeg",
+                "image/png"
+            ].includes(file.type);
+
+        });
+
+
+    selectedImages =
+        validImages;
+
+
+    if (!selectedImages.length) {
+
+        createPdfBtn.disabled = true;
+
+        showStatus(
+            jpgPdfStatus,
+            "Please select JPG, JPEG or PNG images.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    selectedImages.forEach((file, index) => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "file-item";
+
+        item.innerHTML = `
+            <div class="file-name">
+                ${index + 1}. ${escapeHtml(file.name)}
+            </div>
+            <div class="file-size">
+                ${formatBytes(file.size)}
+            </div>
+        `;
+
+        imageFileList.appendChild(item);
+
+    });
+
+
+    createPdfBtn.disabled = false;
+
+
+    showStatus(
+        jpgPdfStatus,
+        `${selectedImages.length} image(s) selected.`,
+        "info"
+    );
+
+});
+
+
+createPdfBtn.addEventListener("click", async () => {
+
+    if (!selectedImages.length) return;
+
+
+    createPdfBtn.disabled = true;
+
+    jpgPdfDownloads.innerHTML = "";
+
+
+    try {
+
+        const {
+            jsPDF
+        } = window.jspdf;
+
+
+        let pdf = null;
+
+
+        for (
+            let index = 0;
+            index < selectedImages.length;
+            index++
+        ) {
+
+            const file =
+                selectedImages[index];
+
+
+            setProgress(
+                jpgPdfProgress,
+                jpgPdfProgressBar,
+                jpgPdfProgressText,
+                (index / selectedImages.length) * 100,
+                `Adding image ${index + 1} of ${selectedImages.length}...`
+            );
+
+
+            const imageData =
+                await loadImageData(file);
+
+
+            const orientation =
+                imageData.width >= imageData.height
+                    ? "landscape"
+                    : "portrait";
+
+
+            const pageWidth =
+                orientation === "landscape"
+                    ? 297
+                    : 210;
+
+
+            const pageHeight =
+                orientation === "landscape"
+                    ? 210
+                    : 297;
+
+
+            if (!pdf) {
+
+                pdf =
+                    new jsPDF({
+                        orientation,
+                        unit: "mm",
+                        format: "a4"
+                    });
+
+            } else {
+
+                pdf.addPage(
+                    "a4",
+                    orientation
+                );
+
+            }
+
+
+            const margin = 8;
+
+            const maxWidth =
+                pageWidth - margin * 2;
+
+            const maxHeight =
+                pageHeight - margin * 2;
+
+
+            const ratio =
+                Math.min(
+                    maxWidth / imageData.width,
+                    maxHeight / imageData.height
+                );
+
+
+            const displayWidth =
+                imageData.width * ratio;
+
+            const displayHeight =
+                imageData.height * ratio;
+
+
+            const x =
+                (pageWidth - displayWidth) / 2;
+
+            const y =
+                (pageHeight - displayHeight) / 2;
+
+
+            pdf.addImage(
+                imageData.dataUrl,
+                "JPEG",
+                x,
+                y,
+                displayWidth,
+                displayHeight,
+                undefined,
+                "MEDIUM"
+            );
+
+        }
+
+
+        setProgress(
+            jpgPdfProgress,
+            jpgPdfProgressBar,
+            jpgPdfProgressText,
+            100,
+            "Creating PDF..."
+        );
+
+
+        const pdfBlob =
+            pdf.output("blob");
+
+
+        const url =
+            URL.createObjectURL(pdfBlob);
+
+
+        const link =
+            document.createElement("a");
+
+        link.href = url;
+
+        link.download =
+            "student-toolkit-images.pdf";
+
+        link.className =
+            "download-link";
+
+        link.textContent =
+            `⬇️ Download PDF (${formatBytes(pdfBlob.size)})`;
+
+
+        jpgPdfDownloads.appendChild(link);
+
+
+        showStatus(
+            jpgPdfStatus,
+            "PDF created successfully.",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showStatus(
+            jpgPdfStatus,
+            "Could not create the PDF. Please check your images and try again.",
+            "error"
+        );
+
+    } finally {
+
+        createPdfBtn.disabled = false;
+
+    }
+
+});
+
+
+function loadImageData(file) {
+
+    return new Promise((resolve, reject) => {
+
+        const url =
+            URL.createObjectURL(file);
+
+        const image =
+            new Image();
+
+
+        image.onload = () => {
+
+            const canvas =
+                document.createElement("canvas");
+
+
+            canvas.width =
+                image.naturalWidth;
+
+            canvas.height =
+                image.naturalHeight;
+
+
+            const ctx =
+                canvas.getContext("2d");
+
+
+            ctx.drawImage(
+                image,
+                0,
+                0
+            );
+
+
+            const dataUrl =
+                canvas.toDataURL(
+                    "image/jpeg",
+                    0.92
+                );
+
+
+            URL.revokeObjectURL(url);
+
+
+            resolve({
+                width: image.naturalWidth,
+                height: image.naturalHeight,
+                dataUrl
+            });
+
+        };
+
+
+        image.onerror = () => {
+
+            URL.revokeObjectURL(url);
+
+            reject(
+                new Error(
+                    "Unable to read image."
+                )
+            );
+
+        };
+
+
+        image.src = url;
+
+    });
+
+}
+
+
+/* =========================================================
+   IMAGE FILE SIZE ADJUSTER
+========================================================= */
+
+setupUploadZone(
+    "resizeUploadZone",
+    "resizeFileInput"
+);
+
+
+const resizeInput =
+    document.getElementById("resizeFileInput");
+
+const resizeBtn =
+    document.getElementById("resizeBtn");
+
+const resizeFileInfo =
+    document.getElementById("resizeFileInfo");
+
+const resizeStatus =
+    document.getElementById("resizeStatus");
+
+const resizeDownloads =
+    document.getElementById("resizeDownloads");
+
+const resizeProgress =
+    document.getElementById("resizeProgress");
+
+const resizeProgressBar =
+    document.getElementById("resizeProgressBar");
+
+const resizeProgressText =
+    document.getElementById("resizeProgressText");
+
+
+let resizeFile = null;
+
+
+resizeInput.addEventListener("change", () => {
+
+    resizeFile =
+        resizeInput.files[0] || null;
+
+
+    resizeFileInfo.innerHTML = "";
+
+    resizeDownloads.innerHTML = "";
+
+    clearStatus(resizeStatus);
+
+    hideProgress(resizeProgress);
+
+    resizeBtn.disabled = true;
+
+
+    if (!resizeFile) return;
+
+
+    if (!resizeFile.type.startsWith("image/")) {
+
+        showStatus(
+            resizeStatus,
+            "Please select an image file.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    resizeFileInfo.innerHTML = `
+        <div class="file-item">
+            <div class="file-name">
+                🖼️ ${escapeHtml(resizeFile.name)}
+            </div>
+            <div class="file-size">
+                ${formatBytes(resizeFile.size)}
+            </div>
+        </div>
+    `;
+
+
+    resizeBtn.disabled = false;
+
+
+    showStatus(
+        resizeStatus,
+        "Image selected. Choose your target size and click Adjust File Size.",
+        "info"
+    );
+
+});
+
+
+function getResizeTargetKB() {
+
+    const active =
+        document.querySelector(
+            "#resizeChips .chip.active"
+        );
+
+    return active
+        ? Number(active.dataset.size)
+        : 45;
+
+}
+
+
+resizeBtn.addEventListener("click", async () => {
+
+    if (!resizeFile) return;
+
+
+    resizeBtn.disabled = true;
+
+    resizeDownloads.innerHTML = "";
+
+
+    try {
+
+        const targetKB =
+            getResizeTargetKB();
+
+        const targetBytes =
+            targetKB * 1024;
+
+
+        showStatus(
+            resizeStatus,
+            "Analyzing image...",
+            "info"
+        );
+
+
+        const image =
+            await loadImageElement(
+                resizeFile
+            );
+
+
+        let width =
+            image.naturalWidth;
+
+        let height =
+            image.naturalHeight;
+
+
+        let quality =
+            0.90;
+
+
+        let resultBlob =
+            null;
+
+
+        /*
+         * Start with the original dimensions.
+         */
+        for (let attempt = 0;
+             attempt < 18;
+             attempt++) {
+
+
+            setProgress(
+                resizeProgress,
+                resizeProgressBar,
+                resizeProgressText,
+                ((attempt + 1) / 18) * 100,
+                `Optimizing image... attempt ${attempt + 1}`
+            );
+
+
+            resultBlob =
+                await canvasToJpeg(
+                    image,
+                    width,
+                    height,
+                    quality
+                );
+
+
+            if (
+                resultBlob.size <=
+                targetBytes
+            ) {
+                break;
+            }
+
+
+            /*
+             * Reduce quality first.
+             */
+            if (quality > 0.35) {
+
+                quality -= 0.08;
+
+                continue;
+
+            }
+
+
+            /*
+             * Then reduce dimensions.
+             */
+            width =
+                Math.max(
+                    200,
+                    Math.floor(width * 0.82)
+                );
+
+            height =
+                Math.max(
+                    200,
+                    Math.floor(height * 0.82)
+                );
+
+            quality = 0.78;
+
+        }
+
+
+        /*
+         * Try to improve the result
+         * if it became much smaller.
+         */
+        if (
+            resultBlob &&
+            resultBlob.size < targetBytes * 0.65
+        ) {
+
+            let betterQuality =
+                Math.min(
+                    0.95,
+                    quality + 0.10
+                );
+
+
+            const improved =
+                await canvasToJpeg(
+                    image,
+                    width,
+                    height,
+                    betterQuality
+                );
+
+
+            if (
+                improved.size <=
+                targetBytes
+            ) {
+
+                resultBlob =
+                    improved;
+
+            }
+
+        }
+
+
+        const url =
+            URL.createObjectURL(
+                resultBlob
+            );
+
+
+        const link =
+            document.createElement("a");
+
+        link.href = url;
+
+        link.download =
+            removeExtension(
+                resizeFile.name
+            ) + "-resized.jpg";
+
+        link.className =
+            "download-link";
+
+        link.textContent =
+            `⬇️ Download Compressed JPG (${formatBytes(resultBlob.size)})`;
+
+
+        resizeDownloads.appendChild(link);
+
+
+        const targetText =
+            targetKB >= 1024
+                ? (targetKB / 1024).toFixed(2) + " MB"
+                : targetKB + " KB";
+
+
+        showStatus(
+            resizeStatus,
+            `Finished. Target: ${targetText}. Output: ${formatBytes(resultBlob.size)}. Exact target size may vary because image compression depends on the image content.`,
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        showStatus(
+            resizeStatus,
+            "Could not compress the image. Please try another image.",
+            "error"
+        );
+
+    } finally {
+
+        resizeBtn.disabled = false;
+
+    }
+
+});
+
+
+function loadImageElement(file) {
+
+    return new Promise((resolve, reject) => {
+
+        const url =
+            URL.createObjectURL(file);
+
+        const image =
+            new Image();
+
+
+        image.onload = () => {
+
+            URL.revokeObjectURL(url);
+
+            resolve(image);
+
+        };
+
+
+        image.onerror = () => {
+
+            URL.revokeObjectURL(url);
+
+            reject(
+                new Error(
+                    "Unable to load image."
+                )
+            );
+
+        };
+
+
+        image.src = url;
+
+    });
+
+}
+
+
+function canvasToJpeg(
+    image,
+    width,
+    height,
+    quality
+) {
+
+    return new Promise(resolve => {
+
+        const canvas =
+            document.createElement("canvas");
+
+
+        canvas.width =
+            width;
+
+        canvas.height =
+            height;
+
+
+        const ctx =
+            canvas.getContext("2d");
+
+
+        ctx.fillStyle =
+            "white";
+
+
+        ctx.fillRect(
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        ctx.drawImage(
+            image,
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        canvas.toBlob(
+            blob => resolve(blob),
+            "image/jpeg",
+            quality
+        );
+
+    });
+
+}
+
+
+/* =========================================================
+   SECURITY / TEXT HELPER
+========================================================= */
+
+function escapeHtml(text) {
+
+    return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+function removeExtension(filename) {
+
+    return filename
+        .replace(/\.[^/.]+$/, "");
+
+}
+
+
+/* =========================================================
+   INITIAL UI
+========================================================= */
+
+console.log(
+    "Student Toolkit loaded successfully."
+);
+
+</script>
+
+</body>
+</html>
